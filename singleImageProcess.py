@@ -46,6 +46,7 @@ def detect_dominant_color_kmeans(square):
 
 def normalize_illumination(square):
     hsv = cv2.cvtColor(square, cv2.COLOR_BGR2HSV)
+    
     h, s, v = cv2.split(hsv)
     v = cv2.equalizeHist(v)
     hsv_normalized = cv2.merge((h, s, v))
@@ -53,13 +54,13 @@ def normalize_illumination(square):
 
 # Color name mapping
 COLOR_NAME_REF = {
-    "red": [255, 0, 0],
-    "blue": [0, 0, 255],
-    "green": [0, 255, 0],
-    "yellow": [255, 255, 0],
-    "orange": [255, 165, 0],
-    "white": [255, 255, 255],
-    "black": [0, 0, 0],
+    "red": [40, 55, 190],
+    "blue": [100, 45, 20],
+    "green": [60, 155, 70],
+    "yellow": [50, 135, 200],
+    "orange": [30, 80, 200],
+    "white": [155, 180, 200],
+    
 }
 
 def get_color_name(rgb):
@@ -91,7 +92,7 @@ def display_results_with_names(squares, results, title):
     plt.show()
 
 # Load the uploaded image
-image_path = "images/red2.jpeg"
+image_path = "images/redPerfect.jpeg"
 image = cv2.imread(image_path)
 
 # Process the image
@@ -108,8 +109,8 @@ for square in squares:
     normalized_square = normalize_illumination(square)
     normalized_squares.append(normalized_square)
     normalized_kmeans_color = detect_dominant_color_kmeans(normalized_square)
-    illumination_results.append(normalized_kmeans_color)
+    # illumination_results.append(normalized_kmeans_color)
 
 # Display results with color names
 display_results_with_names(squares, kmeans_results, "K-Means Detected Colors with Names")
-display_results_with_names(normalized_squares, illumination_results, "Illumination-Normalized Colors with Names")
+# display_results_with_names(normalized_squares, illumination_results, "Illumination-Normalized Colors with Names")
