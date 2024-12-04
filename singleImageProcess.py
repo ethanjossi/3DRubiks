@@ -54,11 +54,11 @@ def normalize_illumination(square):
 
 # Color name mapping
 COLOR_NAME_REF = {
-    "red": [40, 55, 190],
+    "red": [40, 80, 210],
     "blue": [100, 45, 20],
     "green": [60, 155, 70],
     "yellow": [50, 135, 200],
-    "orange": [30, 80, 200],
+    "orange": [30, 100, 220],
     "white": [155, 180, 200],
     
 }
@@ -112,5 +112,5 @@ for square in squares:
     # illumination_results.append(normalized_kmeans_color)
 
 # Display results with color names
-display_results_with_names(squares, kmeans_results, "K-Means Detected Colors with Names")
+# display_results_with_names(squares, kmeans_results, "K-Means Detected Colors with Names")
 # display_results_with_names(normalized_squares, illumination_results, "Illumination-Normalized Colors with Names")
