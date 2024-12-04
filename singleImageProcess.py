@@ -76,7 +76,7 @@ def preprocess_image_debug_find_face(image):
 # Example usage for debugging
 if __name__ == "__main__":
     # Load an example image
-    image_file = "red2.jpeg"  # Replace with the path to your image
+    image_file = "images/red2.jpeg"  # Replace with the path to your image
     image = cv2.imread(image_file)
 
     try:
