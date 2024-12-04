@@ -2,76 +2,94 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-def preprocess_image_debug_find_face(image):
+def rubiks_cube_line_detection_and_homography_clean(image):
     """
-    Preprocess the input image to detect the outer quadrilateral of the Rubik's Cube face.
-    Includes debugging visualizations for intermediate steps.
+    Detect the entire Rubik's Cube face using line detection and correct its perspective.
     """
-    # Convert to grayscale
+    # Create a figure for debugging outputs
+    plt.figure(figsize=(12, 8))
+
+    # Step 1: Grayscale Conversion
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    plt.figure(figsize=(10, 6))
-    plt.subplot(2, 3, 5)
-    plt.imshow(gray, cmap="gray")
+    plt.subplot(4, 4, 1)
+    plt.imshow(gray, cmap='gray')
+    plt.title("Grayscale Image")
     plt.axis("off")
 
-    # Step 1: Edge Detection
+    # Step 2: Line Detection
     edges = cv2.Canny(gray, 50, 150)
-    plt.subplot(2, 3, 1)
-    plt.imshow(edges, cmap="gray")
-    plt.title("Edge Detection")
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=50, maxLineGap=10)
+
+    debug_lines = image.copy()
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(debug_lines, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    plt.subplot(4, 4, 2)
+    plt.imshow(cv2.cvtColor(debug_lines, cv2.COLOR_BGR2RGB))
+    plt.title("Detected Lines")
     plt.axis("off")
 
-    # Step 2: Contour Detection
-    contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    debug_contours = image.copy()
-    cv2.drawContours(debug_contours, contours, -1, (0, 255, 0), 2)
-    plt.subplot(2, 3, 2)
-    plt.imshow(cv2.cvtColor(debug_contours, cv2.COLOR_BGR2RGB))
-    plt.title("Contours Detected")
-    plt.axis("off")
+    # Step 3: Extract Bounding Box
+    if lines is not None:
+        points = []
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            points.extend([(x1, y1), (x2, y2)])
+        points = np.array(points)
 
-    # Step 3: Filter for Largest Contours
-    contour_areas = [cv2.contourArea(c) for c in contours]
-    largest_contours = sorted(zip(contours, contour_areas), key=lambda x: x[1], reverse=True)
+        # Find the convex hull of the points
+        hull = cv2.convexHull(points)
+        rect = cv2.boundingRect(hull)
+        x, y, w, h = rect
 
-    # Try to find a quadrilateral from the largest few contours
-    approx = None
-    for contour, area in largest_contours[:5]:  # Analyze only the top 5 largest contours
-        epsilon = 0.02 * cv2.arcLength(contour, True)
-        candidate_approx = cv2.approxPolyDP(contour, epsilon, True)
-        if len(candidate_approx) == 4:  # Found a quadrilateral
-            approx = candidate_approx
-            break
+        debug_bbox = image.copy()
+        cv2.rectangle(debug_bbox, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        plt.subplot(4, 4, 3)
+        plt.imshow(cv2.cvtColor(debug_bbox, cv2.COLOR_BGR2RGB))
+        plt.title("Bounding Box")
+        plt.axis("off")
+    else:
+        raise ValueError("No lines detected.")
 
-    if approx is None:
-        print("DEBUG: Could not find a quadrilateral for the Rubik's Cube face.")
-        raise ValueError("Could not detect the Rubik's Cube face.")
+    # Step 4: Warp the Detected Face to a Square
+    src_pts = np.float32([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
+    dst_pts = np.float32([[0, 0], [300, 0], [300, 300], [0, 300]])
+    matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    warped = cv2.warpPerspective(image, matrix, (300, 300))
 
-    # Debug visualization for the chosen quadrilateral
-    debug_approx = image.copy()
-    cv2.drawContours(debug_approx, [approx], -1, (255, 0, 0), 2)
-    plt.subplot(2, 3, 3)
-    plt.imshow(cv2.cvtColor(debug_approx, cv2.COLOR_BGR2RGB))
-    plt.title("Quadrilateral Approximation")
-    plt.axis("off")
-
-    # Step 4: Homography (Warp to a Square)
-    pts_src = np.array([point[0] for point in approx], dtype="float32")
-    size = 300  # Output square size (300x300 pixels)
-    pts_dst = np.array([[0, 0], [size - 1, 0], [size - 1, size - 1], [0, size - 1]], dtype="float32")
-
-    matrix = cv2.getPerspectiveTransform(pts_src, pts_dst)
-    warped = cv2.warpPerspective(image, matrix, (size, size))
-    plt.subplot(2, 3, 4)
+    plt.subplot(4, 4, 4)
     plt.imshow(cv2.cvtColor(warped, cv2.COLOR_BGR2RGB))
     plt.title("Warped Square")
     plt.axis("off")
 
-    # Display the image processing pipeline
+    # Step 5: Divide Warped Square into 3x3 Grid
+    squares = []
+    h, w = warped.shape[:2]
+    step_h, step_w = h // 3, w // 3
+    for i in range(3):
+        for j in range(3):
+            square = warped[i * step_h:(i + 1) * step_h, j * step_w:(j + 1) * step_w]
+            squares.append(square)
+
+    # Visualize Extracted Squares (in the remaining subplots)
+    for idx, square in enumerate(squares[:9]):  # Ensure we plot only 9 squares
+        plt.subplot(4, 4, 5 + idx)
+        plt.imshow(cv2.cvtColor(square, cv2.COLOR_BGR2RGB))
+        plt.title(f"Square {idx + 1}")
+        plt.axis("off")
+
     plt.tight_layout()
     plt.show()
 
-    return warped
+    return warped, squares
+
+
+
+
+
+
 
 # Example usage for debugging
 if __name__ == "__main__":
@@ -80,7 +98,7 @@ if __name__ == "__main__":
     image = cv2.imread(image_file)
 
     try:
-        warped = preprocess_image_debug_find_face(image)
+        warped = rubiks_cube_line_detection_and_homography_clean(image)
         print("Preprocessing completed successfully!")
     except ValueError as e:
         print(f"Error: {e}")
