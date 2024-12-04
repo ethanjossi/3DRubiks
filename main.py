@@ -36,7 +36,7 @@ for image_path in image_paths:
     for square in squares:
         kmeans_color = ip.detect_dominant_color_kmeans(square)
         kmeans_results.append(kmeans_color)
-        print(kmeans_color)
+    print(kmeans_results)
     color_matrix = [
         [ip.get_color_name(rgb) for rgb in row]
         for row in [kmeans_results[i:i+3] for i in range(0, len(kmeans_results), 3)]
