@@ -2,69 +2,39 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-def rubiks_cube_line_detection_and_homography_clean(image):
+def refine_and_adjust_rubiks_detection(image):
     """
-    Detect the entire Rubik's Cube face using line detection and correct its perspective.
+    Improved detection of Rubik's Cube squares with dynamic rotation and alignment.
     """
-    # Create a figure for debugging outputs
-    plt.figure(figsize=(12, 8))
-
-    # Step 1: Grayscale Conversion
+    # Convert to grayscale and detect edges
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    plt.subplot(4, 4, 1)
-    plt.imshow(gray, cmap='gray')
-    plt.title("Grayscale Image")
-    plt.axis("off")
-
-    # Step 2: Line Detection
     edges = cv2.Canny(gray, 50, 150)
+    
+    # Detect lines using Hough Transform
     lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=50, maxLineGap=10)
+    if lines is None:
+        raise ValueError("No lines detected, unable to proceed.")
+    
+    # Generate grid intersections
+    points = []
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        points.extend([(x1, y1), (x2, y2)])
+    points = np.array(points)
 
-    debug_lines = image.copy()
-    if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            cv2.line(debug_lines, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    # Find convex hull of points and fit a polygon
+    hull = cv2.convexHull(points)
+    rect = cv2.minAreaRect(hull)
+    box = cv2.boxPoints(rect)
+    box = np.intp(box)
 
-    plt.subplot(4, 4, 2)
-    plt.imshow(cv2.cvtColor(debug_lines, cv2.COLOR_BGR2RGB))
-    plt.title("Detected Lines")
-    plt.axis("off")
+    # Ensure the box aligns to a square and warp
+    side_length = max(rect[1])  # Ensure square by using the larger dimension
+    dst_pts = np.float32([[0, 0], [side_length, 0], [side_length, side_length], [0, side_length]])
+    M = cv2.getPerspectiveTransform(np.float32(box), dst_pts)
+    warped = cv2.warpPerspective(image, M, (int(side_length), int(side_length)))
 
-    # Step 3: Extract Bounding Box
-    if lines is not None:
-        points = []
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            points.extend([(x1, y1), (x2, y2)])
-        points = np.array(points)
-
-        # Find the convex hull of the points
-        hull = cv2.convexHull(points)
-        rect = cv2.boundingRect(hull)
-        x, y, w, h = rect
-
-        debug_bbox = image.copy()
-        cv2.rectangle(debug_bbox, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        plt.subplot(4, 4, 3)
-        plt.imshow(cv2.cvtColor(debug_bbox, cv2.COLOR_BGR2RGB))
-        plt.title("Bounding Box")
-        plt.axis("off")
-    else:
-        raise ValueError("No lines detected.")
-
-    # Step 4: Warp the Detected Face to a Square
-    src_pts = np.float32([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
-    dst_pts = np.float32([[0, 0], [300, 0], [300, 300], [0, 300]])
-    matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-    warped = cv2.warpPerspective(image, matrix, (300, 300))
-
-    plt.subplot(4, 4, 4)
-    plt.imshow(cv2.cvtColor(warped, cv2.COLOR_BGR2RGB))
-    plt.title("Warped Square")
-    plt.axis("off")
-
-    # Step 5: Divide Warped Square into 3x3 Grid
+    # Divide warped square into 3x3 grid
     squares = []
     h, w = warped.shape[:2]
     step_h, step_w = h // 3, w // 3
@@ -73,13 +43,37 @@ def rubiks_cube_line_detection_and_homography_clean(image):
             square = warped[i * step_h:(i + 1) * step_h, j * step_w:(j + 1) * step_w]
             squares.append(square)
 
-    # Visualize Extracted Squares (in the remaining subplots)
-    for idx, square in enumerate(squares[:9]):  # Ensure we plot only 9 squares
-        plt.subplot(4, 4, 5 + idx)
+    # Visualize results
+    plt.figure(figsize=(12, 8))
+    plt.subplot(4, 4, 1)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title("Original Image")
+    plt.axis("off")
+
+    plt.subplot(4, 4, 2)
+    plt.imshow(cv2.cvtColor(edges, cv2.COLOR_BGR2RGB))
+    plt.title("Edges Detected")
+    plt.axis("off")
+
+    plt.subplot(4, 4, 3)
+    cv2.drawContours(image, [box], -1, (0, 255, 0), 2)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.title("Aligned Bounding Box")
+    plt.axis("off")
+
+    plt.subplot(4, 4, 4)
+    plt.imshow(cv2.cvtColor(warped, cv2.COLOR_BGR2RGB))
+    plt.title("Warped Square")
+    plt.axis("off")
+ 
+
+    # Visualize individual squares
+    
+    for idx, square in enumerate(squares[:9]):  # Ensure only 9 squares are shown
+        plt.subplot(4, 4, idx + 4)
         plt.imshow(cv2.cvtColor(square, cv2.COLOR_BGR2RGB))
         plt.title(f"Square {idx + 1}")
         plt.axis("off")
-
     plt.tight_layout()
     plt.show()
 
@@ -89,16 +83,14 @@ def rubiks_cube_line_detection_and_homography_clean(image):
 
 
 
-
-
 # Example usage for debugging
 if __name__ == "__main__":
     # Load an example image
-    image_file = "images/red2.jpeg"  # Replace with the path to your image
+    image_file = "images/redTilted.jpeg"  # Replace with the path to your image
     image = cv2.imread(image_file)
 
     try:
-        warped = rubiks_cube_line_detection_and_homography_clean(image)
+        warped =  refine_and_adjust_rubiks_detection(image)
         print("Preprocessing completed successfully!")
     except ValueError as e:
         print(f"Error: {e}")
