@@ -36,14 +36,41 @@ def rubiks_cube_line_detection_and_homography_clean(image):
         raise ValueError("No lines detected.")
 
 def detect_dominant_color_kmeans(square):
+    # Reshape the square into a list of pixels
     pixels = square.reshape(-1, 3)
+    
+    # Apply KMeans clustering
     kmeans = KMeans(n_clusters=3, random_state=0, n_init=10)
     kmeans.fit(pixels)
+    
+    # Retrieve cluster labels and their counts
     labels, counts = np.unique(kmeans.labels_, return_counts=True)
-    dominant_cluster = labels[np.argmax(counts)]
-    dominant_color = kmeans.cluster_centers_[dominant_cluster].astype(int)
-    return dominant_color
+    
+    # Retrieve cluster centers
+    cluster_centers = kmeans.cluster_centers_
+    
+  
+    
+    # Filter out clusters that are too dark (close to black)
+    brightness_threshold = 50  # Adjust as needed (lower values are stricter)
+    valid_clusters = [
+        (center, count) for center, count in zip(cluster_centers, counts)
+        if np.mean(center) > brightness_threshold  # Mean brightness threshold
+    ]
+    
+    # Debugging: Print valid clusters
+    
+    # If no valid clusters remain, return black as a fallback
+    if not valid_clusters:
+        print("No valid clusters found; returning [0, 0, 0].")
+        return np.array([0, 0, 0])  # Black
+    
+    # Find the most frequent valid cluster
+    dominant_cluster = max(valid_clusters, key=lambda x: x[1])  # Cluster with the highest count
+    dominant_color = dominant_cluster[0].astype(int)
 
+    
+    return dominant_color
 def normalize_illumination(square):
     hsv = cv2.cvtColor(square, cv2.COLOR_BGR2HSV)
     
