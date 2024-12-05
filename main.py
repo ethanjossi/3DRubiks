@@ -43,4 +43,11 @@ for image_path in image_paths:
     ]
     print(color_matrix)
     cube.set_side(side=side_map[color_matrix[1][1]],    colors=color_matrix)
+    # ip.display_results_with_names(squares, kmeans_results, "K-Means Detected Colors with Names")
+cube.rotate_face('front', 1)
+cube.rotate_face('back', 3)
+cube.rotate_face('left', 0)
+cube.rotate_face('right', 0)
+cube.rotate_face('top', 3)
+cube.rotate_face('bottom', 1)
 cube.display_rubiks_cube()

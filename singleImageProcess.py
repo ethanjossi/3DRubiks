@@ -92,7 +92,7 @@ def display_results_with_names(squares, results, title):
     plt.show()
 
 # Load the uploaded image
-image_path = "images/redPerfect.jpeg"
+image_path = "images/redTilted.jpeg"
 image = cv2.imread(image_path)
 
 # Process the image
@@ -106,9 +106,9 @@ normalized_squares = []
 for square in squares:
     kmeans_color = detect_dominant_color_kmeans(square)
     kmeans_results.append(kmeans_color)
-    normalized_square = normalize_illumination(square)
-    normalized_squares.append(normalized_square)
-    normalized_kmeans_color = detect_dominant_color_kmeans(normalized_square)
+    # normalized_square = normalize_illumination(square)
+    # normalized_squares.append(normalized_square)
+    # normalized_kmeans_color = detect_dominant_color_kmeans(normalized_square)
     # illumination_results.append(normalized_kmeans_color)
 
 # Display results with color names

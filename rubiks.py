@@ -83,10 +83,10 @@ class RubiksCube:
         face_rotations = {
             'front': np.eye(3),
             'back': np.diag([-1, 1, -1]),
-            'left': np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]),
-            'right': np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]]),
-            'top': np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]),
-            'bottom': np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
+            'left': np.array([[0, 0, 1], [0, -1, 0], [-1, 0, 0]]),
+            'right': np.array([[0, 0, -1], [0, 1, 0], [-1, 0, 0]]),
+            'top': np.array([[-1, 0, 0], [0, 0, -1], [0, 1, 0]]),
+            'bottom': np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
         }
 
         # Color map for face colors
