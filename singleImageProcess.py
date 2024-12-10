@@ -1,4 +1,3 @@
-# Importing necessary libraries again
 import cv2
 import numpy as np
 from sklearn.cluster import KMeans
@@ -49,10 +48,8 @@ def detect_dominant_color_kmeans(square):
     # Retrieve cluster centers
     cluster_centers = kmeans.cluster_centers_
     
-  
-    
     # Filter out clusters that are too dark (close to black)
-    brightness_threshold = 50  # Adjust as needed (lower values are stricter)
+    brightness_threshold = 50  
     valid_clusters = [
         (center, count) for center, count in zip(cluster_centers, counts)
         if np.mean(center) > brightness_threshold  # Mean brightness threshold
@@ -68,12 +65,10 @@ def detect_dominant_color_kmeans(square):
     # Find the most frequent valid cluster
     dominant_cluster = max(valid_clusters, key=lambda x: x[1])  # Cluster with the highest count
     dominant_color = dominant_cluster[0].astype(int)
-
-    
     return dominant_color
+
 def normalize_illumination(square):
     hsv = cv2.cvtColor(square, cv2.COLOR_BGR2HSV)
-    
     h, s, v = cv2.split(hsv)
     v = cv2.equalizeHist(v)
     hsv_normalized = cv2.merge((h, s, v))
